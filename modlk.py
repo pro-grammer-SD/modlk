@@ -5,6 +5,7 @@ import zipfile
 import argparse
 
 PLATFORM_TOOLS_URL = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip"
+PLATFORM_TOOLS_DIR = os.path.join("platform-tools-latest-windows", "platform-tools")
 
 def download_platform_tools():
     zip_path = "platform-tools-latest-windows.zip"
@@ -13,10 +14,9 @@ def download_platform_tools():
         urllib.request.urlretrieve(PLATFORM_TOOLS_URL, zip_path)
     with zipfile.ZipFile(zip_path, 'r') as zip_ref:
         zip_ref.extractall(".")
-    folders = [f for f in os.listdir(".") if os.path.isdir(f) and "platform-tools" in f]
-    if not folders:
-        raise RuntimeError("Failed to extract platform-tools")
-    return os.path.abspath(folders[0])
+    if not os.path.isdir(PLATFORM_TOOLS_DIR):
+        raise RuntimeError(f"Failed to find {PLATFORM_TOOLS_DIR} after extraction")
+    return os.path.abspath(PLATFORM_TOOLS_DIR)
 
 def get_platform_tools_path():
     try:
@@ -40,9 +40,11 @@ def patch_lk_image(src_path, dst_path):
         f.write(data)
 
 def run_cmd(cmd, platform_tools_path=""):
+    parts = cmd.split()
+    exe_path = parts[0]
     if platform_tools_path:
-        cmd = os.path.join(platform_tools_path, cmd.split()[0]) + " " + " ".join(cmd.split()[1:])
-    subprocess.run(cmd, shell=True, check=True)
+        exe_path = os.path.join(platform_tools_path, exe_path)
+    subprocess.run([exe_path] + parts[1:], check=True)
 
 def main():
     parser = argparse.ArgumentParser(description="Patch lk.img to remove boot warnings and flash via fastboot.")
@@ -65,4 +67,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-  
+    
